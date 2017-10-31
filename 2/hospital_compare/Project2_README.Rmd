@@ -1,0 +1,145 @@
+---
+title: "Project2_README"
+author: "Shashank P Shivdev"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 2
+
+The data contains two files - 
+1. Outcome-of-care-measures.csv: Contains information about 30-day mortality and readmission rates for heart attacks, heart failure, and pneumonia for over 4,000 hospitals. 
+2. Hospital-data.csv: Contains information about each hospital. 
+
+### Part 1
+
+To create a function that returns the name of the hospital that has the best (i.e. lowest) 30-day mortality for the speci???ed outcome in that state.
+
+```{r}
+
+best<- function(state, outcome){
+    
+  data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+  
+  if(!any(state == data$State)){
+    stop(print("Invalid state"))
+    }
+  else if((outcome %in% c("heart attack", "heart failure", "pneumonia")) == FALSE){
+    stop(print("Invalid outcome"))
+    }
+  
+  sub_data <- subset(data, State == state)
+  if (outcome == "heart attack"){
+    colnum <- 11
+    }
+  else if (outcome == "heart failure"){
+    colnum <- 17
+    }
+  else {
+    colnum <- 23
+    }
+  
+  min <- which(as.numeric(sub_data[ ,colnum]) == min(as.numeric(sub_data[ ,colnum]), na.rm = TRUE))
+  hospitals <- sub_data[min, 2]
+  hospitals <- sort(hospitals)
+  
+  return(hospitals[1])
+  
+}
+```
+
+### Part 2
+
+To create a function that reads the outcome-of-care-measures.csv ???le and returns the name of the hospital that has the ranking speci???ed by an argument for a particular specified outcome
+
+```{r}
+
+best<- function(state, outcome, num){
+    
+  data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+  
+  if(!any(state == data$State)){
+    stop(print("Invalid state"))
+    }
+  else if((outcome %in% c("heart attack", "heart failure", "pneumonia")) == FALSE){
+    stop(print("Invalid outcome"))
+    }
+  
+  sub_data <- subset(data, State == state)
+  if (outcome == "heart attack"){
+    colnum <- 11
+    }
+  else if (outcome == "heart failure"){
+    colnum <- 17
+    }
+  else{
+    colnum <- 23
+    }
+  
+  sub_data[, colnum] <- as.numeric(sub_data[, colnum])
+  sub_data <- sub_data[order(sub_data[, colnum], sub_data[, 2]), ]
+  sub_data <- sub_data[(!is.na(sub_data[, colnum])), ]
+  
+  if(num == "best"){
+    num <- 1
+    }            
+  else if (num == "worst"){
+    num <- nrow(sub_data)
+    }      
+  
+  return(sub_data[num, 2])
+
+}
+```
+
+### Part 3
+
+To create a function that reads returns a 2-column data frame containing the hospital in each state that has the ranking speci???ed for a specified outcome
+
+```{r}
+
+rankall<- function(outcome, num = "best"){
+    
+     data <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
+    
+     if((outcome %in% c("heart attack", "heart failure", "pneumonia")) == FALSE){
+         stop(print("invalid outcome"))
+    }
+    
+     if (outcome == "heart attack"){
+        colnum <- 11
+    }
+    else if (outcome == "heart failure"){
+        colnum <- 17
+    }
+    else{
+        colnum <- 23
+    }
+    
+    data[, colnum] <- as.numeric(data[, colnum])
+    
+    data = data[!is.na(data[, colnum]), ]
+    
+    split_data = split(data, data$State)
+    
+    result = lapply(split_data, function(x, num){ 
+        
+        x = x[order(x[, colnum], x$Hospital.Name), ]
+      
+        if(num == "best"){
+            return (x$Hospital.Name[1])
+        }
+        else if(num == "worst"){
+            return (x$Hospital.Name[nrow(x)])
+        }
+        else{
+            return (x$Hospital.Name[num])
+        }
+    }, num)
+    
+    return(data.frame(Hospital=unlist(result), State=names(result)))
+}
+```
