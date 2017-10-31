@@ -1,0 +1,123 @@
+---
+title: "Project1_README"
+author: "Shashank P Shivdev"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 1
+
+The data contains 332 comma-separated-value (CSV) files containing pollution monitoring data for fine particulate matter (PM) air pollution at 332 locations in the United States. Each file contains data from a single monitor and the ID number for each monitor is contained in the file name.
+
+Each file contains three variables:
+Date: the date of the observation in YYYY-MM-DD format (year-month-day)
+sulfate: the level of sulfate PM in the air on that date (measured in micrograms per cubic meter)
+nitrate: the level of nitrate PM in the air on that date (measured in micrograms per cubic meter)
+
+### Part 1
+
+To create a function that calculates the mean of a pollutant (sulfate or nitrate) across a specified list of monitors' ids, ignoring any missing values coded as NA.
+
+```{r}
+
+pollutantmean <- function(directory, pollutant, ids){
+    
+    setwd(directory)
+    files = list.files(pattern = "*.csv") #list of csv files to be sourced
+    
+    masterlist <- list(NULL)
+    index = 1
+    
+    for (file in files){
+        df <- data.frame(read.csv(file = file))
+        masterlist[[index]] <- df
+        index = index + 1
+    }
+    
+    rm(file, index, df) #remove intermediate variables
+    
+    meanlist = data.frame()
+    
+    for (i in ids){
+        isna <- is.na(masterlist[[i]][ , pollutant])
+        meanlist <- rbind(meanlist, masterlist[[i]][!isna, ])
+    }
+    
+    mean(meanlist[ , pollutant])
+    
+}
+```
+
+### Part 2
+
+To create a function that reads a directory full of csvs and reports the number of completely observed cases in each data file.
+
+```{r}
+
+complete <- function(directory, ids){
+    
+    setwd(directory)
+    files = list.files(pattern = "*.csv") #list of csv files to be sourced
+    
+    masterlist <- list(NULL)
+    index = 1
+    
+    for (file in files){
+        df <- data.frame(read.csv(file = file))
+        masterlist[[index]] <- df
+        index = index + 1
+    }
+    
+    rm(file, index, df) #remove intermediate variables
+    
+    complete_list <- data.frame()
+    
+    for (i in ids){
+        nobs <- nrow(masterlist[[i]][complete.cases(masterlist[[i]]), ])
+        complete_list <- rbind(complete_list, c(i, nobs))
+    }
+    
+    colnames(complete_list) <- c("id", "nobs")
+    complete_list
+}
+```
+
+### Part 3
+
+To create a function that takes a directory of data files and a threshold for complete cases and calculates the correlation between sulfate and nitrate for monitor locations where the number of completely observed cases (on all variables) is greater than the threshold.
+
+```{r}
+corr <- function(directory, threshold = 0){
+    
+    setwd(directory)
+    files = list.files(pattern = "*.csv") #list of csv files to be sourced
+    
+    masterlist <- list(NULL)
+    index = 1
+    
+    for (file in files){
+        df <- data.frame(read.csv(file = file))
+        masterlist[[index]] <- df
+        index = index + 1
+    }
+
+    
+    rm(file, index, df) #remove intermediate variables
+    
+    corr_vect <- NULL
+    
+    for (i in 1:length(masterlist)){
+        nobs <- nrow(masterlist[[i]][complete.cases(masterlist[[i]]), ])
+        if(nobs > threshold){
+            corr_vect <- c(corr_vect, cor(masterlist[[i]][complete.cases(masterlist[[i]]), "sulfate"], masterlist[[i]][complete.cases(masterlist[[i]]), "nitrate"]))
+        }
+    }
+    
+    corr_vect
+}
+
+```
+
