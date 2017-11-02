@@ -1,0 +1,109 @@
+---
+title: "Project3_README"
+author: "Shashank P Shivdev"
+date: "November 3, 2017"
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Project 3
+
+The goal is to prepare tidy data that can be used for later analysis.
+
+The data linked represents data collected from the accelerometers from the Samsung Galaxy S smartphone. A full description is available at the site where the data was obtained:
+
+http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
+
+Here are the data for the project:
+
+https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
+
+### Data Processing - Steps
+
+#### Step 1
+
+Downloading and unzipping dataset
+
+```{r}
+
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip"
+download.file(fileUrl,destfile="./data/Dataset.zip")
+
+unzip(zipfile="./data/Dataset.zip",exdir="./data")
+
+```
+
+#### Step 2
+
+Merging the training and the test sets to create one data set:
+Reading files
+
+```{r}
+
+features <- read.table("E:/DS_C/R_projects/3/UCI_data/features.txt")
+
+activityLabels <- read.table("E:/DS_C/R_projects/3/UCI_data/activity_labels.txt", col.names = c('activityId','activityType'))
+
+x_train <- read.table("E:/DS_C/R_projects/3/UCI_data/train/X_train.txt", col.names = features[ , 2])
+y_train <- read.table("E:/DS_C/R_projects/3/UCI_data/train/y_train.txt", col.names = "activityId")
+subject_train <- read.table("E:/DS_C/R_projects/3/UCI_data/train/subject_train.txt", col.names = "subjectId")
+
+x_test <- read.table("E:/DS_C/R_projects/3/UCI_data/test/X_test.txt", col.names = features[ , 2])
+y_test <- read.table("E:/DS_C/R_projects/3/UCI_data/test/y_test.txt", col.names = "activityId")
+subject_test <- read.table("E:/DS_C/R_projects/3/UCI_data/test/subject_test.txt", col.names = "subjectId")
+
+```
+
+Merging datasets
+
+```{r}
+
+total_train <- cbind(y_train, subject_train, x_train)
+total_test <- cbind(y_test, subject_test, x_test)
+total_data <- rbind(total_train, total_test)
+
+```
+
+#### Step 3
+
+Extracting only the measurements on the mean and standard deviation for each measurement
+
+```{r}
+
+colNames <- colnames(total_data)
+
+sdmu_colNames <- (grepl("activityId" , colNames) | grepl("subjectId" , colNames) | grepl("mean.." , colNames) | grepl("std.." , colNames))
+
+sdmu_data <- total_train[ , sdmu_colNames == TRUE]
+
+```
+
+#### Step 4
+
+Using descriptive activity names to name the activities in the data set
+
+```{r}
+
+activitynames_data <- merge(sdmu_data, activityLabels, by = 'activityId', all = TRUE)
+
+```
+
+#### Step 5
+
+Creating a second, independent tidy data set with the average of each variable for each activity and each subject
+
+```{r}
+
+tidyset <- aggregate(. ~subjectId + activityId, activitynames_data, mean)
+tidyset <- tidyset[order(tidyset$subjectId, tidyset$activityId), ]
+```
+
+Writing second tidy data set in txt file
+
+```{r}
+
+write.table(tidyset, "tidyset.txt", row.name=FALSE)
